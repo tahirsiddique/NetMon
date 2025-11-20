@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import Nodes from './pages/Nodes'
 import Alerts from './pages/Alerts'
 import InternetUsage from './pages/InternetUsage'
+import InternetLinks from './pages/InternetLinks'
 import Settings from './pages/Settings'
 import Layout from './components/common/Layout'
 
@@ -61,6 +62,7 @@ function App() {
           <Route path="nodes" element={<Nodes />} />
           <Route path="alerts" element={<Alerts />} />
           <Route path="internet-usage" element={<InternetUsage />} />
+          <Route path="internet-links" element={<InternetLinks />} />
           <Route path="settings" element={<Settings />} />
         </Route>
 

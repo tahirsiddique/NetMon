@@ -6,6 +6,7 @@ import {
   Server,
   AlertTriangle,
   Globe,
+  Wifi,
   Settings,
   LogOut,
   Menu,
@@ -29,6 +30,7 @@ function Layout() {
     { name: 'Infrastructure Nodes', path: '/nodes', icon: Server },
     { name: 'Alerts', path: '/alerts', icon: AlertTriangle },
     { name: 'Internet Usage', path: '/internet-usage', icon: Globe },
+    { name: 'Internet Links', path: '/internet-links', icon: Wifi },
     { name: 'Settings', path: '/settings', icon: Settings },
   ]
 

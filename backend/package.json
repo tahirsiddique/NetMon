@@ -10,6 +10,8 @@
     "worker:dev": "nodemon src/workers/index.js",
     "netflow": "node src/workers/netflow-worker.js",
     "netflow:dev": "nodemon src/workers/netflow-worker.js",
+    "zabbix-sync": "node src/workers/zabbix-sync-worker.js",
+    "zabbix-sync:dev": "nodemon src/workers/zabbix-sync-worker.js",
     "migrate": "node src/config/migrate.js",
     "seed": "node src/config/seed.js",
     "test": "jest"

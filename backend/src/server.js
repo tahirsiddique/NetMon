@@ -18,6 +18,7 @@ const nodesController = require('./controllers/nodes.controller');
 const dashboardController = require('./controllers/dashboard.controller');
 const metricsController = require('./controllers/metrics.controller');
 const internetUsageController = require('./controllers/internet-usage.controller');
+const zabbixController = require('./controllers/zabbix.controller');
 
 // Initialize Express app
 const app = express();
@@ -115,6 +116,18 @@ app.get('/api/internet-usage/search', authenticateJWT, internetUsageController.s
 app.get('/api/internet-usage/export', authenticateJWT, internetUsageController.exportCSV);
 app.get('/api/internet-usage/resolver/stats', authenticateJWT, internetUsageController.getResolverStats);
 app.post('/api/internet-usage/resolver/clear', authenticateJWT, requireRole('admin'), internetUsageController.clearResolverCache);
+
+// Zabbix integration routes
+app.get('/api/zabbix/test', authenticateJWT, requireRole('admin'), zabbixController.testConnection);
+app.post('/api/zabbix/sync', authenticateJWT, requireRole('admin'), zabbixController.syncInternetLinks);
+app.get('/api/zabbix/links', authenticateJWT, zabbixController.getInternetLinks);
+app.get('/api/zabbix/links/stats', authenticateJWT, zabbixController.getInternetLinksStats);
+app.get('/api/zabbix/links/by-type', authenticateJWT, zabbixController.getLinksByType);
+app.get('/api/zabbix/links/:id', authenticateJWT, zabbixController.getInternetLinkById);
+app.get('/api/zabbix/links/host/:hostId', authenticateJWT, zabbixController.getInternetLinkByHostId);
+app.get('/api/zabbix/links/host/:hostId/history', authenticateJWT, zabbixController.getLinkBandwidthHistory);
+app.put('/api/zabbix/links/:id', authenticateJWT, requireRole('admin'), zabbixController.updateLink);
+app.get('/api/zabbix/problems', authenticateJWT, zabbixController.getActiveProblems);
 
 // Alerts routes (placeholder - will be implemented in Phase 6)
 app.get('/api/alerts', authenticateJWT, (req, res) => {
