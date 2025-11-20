@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import api from '../services/api'
 import { Wifi, WifiOff, RefreshCw, AlertTriangle, Activity, TrendingUp, Settings } from 'lucide-react'
+import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 
 function InternetLinks() {
   const [links, setLinks] = useState([])
@@ -166,6 +167,61 @@ function InternetLinks() {
             icon={TrendingUp}
             color="purple"
           />
+        </div>
+      )}
+
+      {/* Bandwidth Chart */}
+      {links.length > 0 && links.some(l => l.bandwidth_in || l.bandwidth_out) && (
+        <div className="card">
+          <h2 className="text-lg font-semibold mb-4">Current Bandwidth by Link</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart
+              data={links.filter(l => l.bandwidth_in || l.bandwidth_out).map(link => ({
+                name: link.link_name,
+                incoming: Number(link.bandwidth_in) / (1024 * 1024), // Convert to Mbps
+                outgoing: Number(link.bandwidth_out) / (1024 * 1024)
+              }))}
+              margin={{ top: 5, right: 30, left: 20, bottom: 80 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+              <XAxis
+                dataKey="name"
+                angle={-45}
+                textAnchor="end"
+                height={100}
+                tick={{ fill: '#6B7280', fontSize: 11 }}
+              />
+              <YAxis
+                tick={{ fill: '#6B7280', fontSize: 12 }}
+                label={{ value: 'Bandwidth (Mbps)', angle: -90, position: 'insideLeft', fill: '#6B7280' }}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '0.5rem'
+                }}
+                formatter={(value) => `${value.toFixed(2)} Mbps`}
+              />
+              <Legend wrapperStyle={{ paddingTop: '20px' }} />
+              <Line
+                type="monotone"
+                dataKey="incoming"
+                stroke="#10B981"
+                strokeWidth={2}
+                name="Incoming"
+                dot={{ r: 4 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="outgoing"
+                stroke="#3B82F6"
+                strokeWidth={2}
+                name="Outgoing"
+                dot={{ r: 4 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       )}
 

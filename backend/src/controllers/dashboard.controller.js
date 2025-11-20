@@ -60,9 +60,19 @@ async function getDashboardOverview(req, res) {
 
     // Get internet link status from Zabbix
     const internetLinks = await query(`
-      SELECT link_name, status, last_check
+      SELECT link_name, status, last_seen as last_check
       FROM zabbix_internet_links
       ORDER BY link_name
+    `);
+
+    // Get nodes by type for charts
+    const nodesByType = await query(`
+      SELECT
+        type,
+        COUNT(*) as count
+      FROM nodes
+      GROUP BY type
+      ORDER BY count DESC
     `);
 
     const overview = {
@@ -70,6 +80,7 @@ async function getDashboardOverview(req, res) {
       critical_nodes: criticalNodes.rows,
       active_alerts: activeAlerts.rows,
       internet_links: internetLinks.rows,
+      nodes_by_type: nodesByType.rows,
       last_updated: new Date()
     };
 

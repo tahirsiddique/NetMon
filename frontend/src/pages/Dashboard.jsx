@@ -10,6 +10,7 @@ import {
   XCircle,
   Clock,
 } from 'lucide-react'
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
 
 function Dashboard() {
   const [overview, setOverview] = useState(null)
@@ -101,6 +102,64 @@ function Dashboard() {
           icon={AlertTriangle}
           color="amber"
         />
+      </div>
+
+      {/* Visualization Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Node Status Distribution */}
+        <div className="card">
+          <h2 className="text-lg font-semibold mb-4">Node Status Distribution</h2>
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie
+                data={[
+                  { name: 'Up', value: stats.up_count || 0, color: '#10B981' },
+                  { name: 'Down', value: stats.down_count || 0, color: '#EF4444' },
+                  { name: 'Warning', value: stats.warning_count || 0, color: '#F59E0B' }
+                ]}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {[
+                  { name: 'Up', value: stats.up_count || 0, color: '#10B981' },
+                  { name: 'Down', value: stats.down_count || 0, color: '#EF4444' },
+                  { name: 'Warning', value: stats.warning_count || 0, color: '#F59E0B' }
+                ].map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Node Types */}
+        <div className="card">
+          <h2 className="text-lg font-semibold mb-4">Infrastructure by Type</h2>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart
+              data={overview?.nodes_by_type || []}
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+              <XAxis dataKey="type" tick={{ fill: '#6B7280', fontSize: 12 }} />
+              <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '0.5rem'
+                }}
+              />
+              <Bar dataKey="count" fill="#3B82F6" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Critical Infrastructure Status */}

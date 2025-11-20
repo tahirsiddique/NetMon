@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import api from '../services/api'
 import { Globe, Download, RefreshCw, Search, TrendingUp, Users, Activity } from 'lucide-react'
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 function InternetUsage() {
   const [topUsers, setTopUsers] = useState([])
   const [stats, setStats] = useState(null)
   const [protocols, setProtocols] = useState([])
+  const [timeSeries, setTimeSeries] = useState([])
   const [timeRange, setTimeRange] = useState('today')
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -19,15 +21,20 @@ function InternetUsage() {
     try {
       setLoading(true)
 
-      const [usersRes, statsRes, protocolsRes] = await Promise.all([
+      // Determine granularity based on time range
+      const granularity = timeRange === 'today' ? 'hour' : timeRange === 'week' ? 'day' : 'day'
+
+      const [usersRes, statsRes, protocolsRes, timeSeriesRes] = await Promise.all([
         api.get(`/internet-usage/top-users?range=${timeRange}&limit=20`),
         api.get(`/internet-usage/stats?range=${timeRange}`),
-        api.get(`/internet-usage/protocols?range=${timeRange}`)
+        api.get(`/internet-usage/protocols?range=${timeRange}`),
+        api.get(`/internet-usage/time-series?range=${timeRange}&granularity=${granularity}`)
       ])
 
       setTopUsers(usersRes.data.data || [])
       setStats(statsRes.data.data || null)
       setProtocols(protocolsRes.data.data || [])
+      setTimeSeries(timeSeriesRes.data.data || [])
 
     } catch (error) {
       console.error('Failed to fetch usage data:', error)
@@ -73,6 +80,35 @@ function InternetUsage() {
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`
+  }
+
+  const formatChartData = (data) => {
+    return data.map(item => ({
+      ...item,
+      time: new Date(item.time_bucket).toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: timeRange === 'today' ? '2-digit' : undefined,
+        minute: timeRange === 'today' ? '2-digit' : undefined
+      }),
+      total_mb: (Number(item.total_bytes) / (1024 * 1024)).toFixed(2)
+    }))
+  }
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+          <p className="text-sm font-medium text-gray-900 mb-1">{label}</p>
+          {payload.map((entry, index) => (
+            <p key={index} className="text-sm" style={{ color: entry.color }}>
+              {entry.name}: {formatBytes(entry.value * 1024 * 1024)}
+            </p>
+          ))}
+        </div>
+      )
+    }
+    return null
   }
 
   return (
@@ -141,6 +177,44 @@ function InternetUsage() {
             icon={TrendingUp}
             color="amber"
           />
+        </div>
+      )}
+
+      {/* Bandwidth Usage Chart */}
+      {timeSeries.length > 0 && (
+        <div className="card">
+          <h2 className="text-lg font-semibold mb-4">Bandwidth Usage Over Time</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={formatChartData(timeSeries)}>
+              <defs>
+                <linearGradient id="colorBandwidth" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+              <XAxis
+                dataKey="time"
+                tick={{ fill: '#6B7280', fontSize: 12 }}
+                angle={-45}
+                textAnchor="end"
+                height={80}
+              />
+              <YAxis
+                tick={{ fill: '#6B7280', fontSize: 12 }}
+                label={{ value: 'Bandwidth (MB)', angle: -90, position: 'insideLeft', fill: '#6B7280' }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Area
+                type="monotone"
+                dataKey="total_mb"
+                stroke="#3B82F6"
+                fillOpacity={1}
+                fill="url(#colorBandwidth)"
+                name="Total Bandwidth"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
       )}
 
