@@ -53,7 +53,7 @@ app.use('/api/', limiter);
 // Enhanced request logging middleware
 app.use(requestLogger);
 
-// Health check endpoint
+// Health check endpoint (liveness probe)
 app.get('/health', async (req, res) => {
   try {
     // Check database connection
@@ -61,15 +61,61 @@ app.get('/health', async (req, res) => {
 
     res.json({
       status: 'healthy',
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       database: 'connected',
-      websocket: 'active'
+      websocket: 'active',
+      memory: {
+        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+        unit: 'MB'
+      }
     });
   } catch (error) {
     res.status(503).json({
       status: 'unhealthy',
+      timestamp: new Date().toISOString(),
       error: 'Database connection failed'
+    });
+  }
+});
+
+// Readiness check endpoint (readiness probe)
+app.get('/ready', async (req, res) => {
+  const checks = {
+    database: false,
+    server: false
+  };
+
+  try {
+    // Check database
+    await pool.query('SELECT 1');
+    checks.database = true;
+
+    // Check if server is ready
+    checks.server = true;
+
+    const allReady = Object.values(checks).every(check => check === true);
+
+    if (allReady) {
+      res.json({
+        status: 'ready',
+        timestamp: new Date().toISOString(),
+        checks
+      });
+    } else {
+      res.status(503).json({
+        status: 'not ready',
+        timestamp: new Date().toISOString(),
+        checks
+      });
+    }
+  } catch (error) {
+    res.status(503).json({
+      status: 'not ready',
+      timestamp: new Date().toISOString(),
+      checks,
+      error: error.message
     });
   }
 });
