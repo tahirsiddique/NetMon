@@ -181,7 +181,54 @@ const migrations = [
     `
   },
 
-  // Migration 8: Create migration tracking table
+  // Migration 8: Update alert tables for Phase 6
+  {
+    name: 'update_alert_tables_phase6',
+    sql: `
+      -- Update alert_rules table structure
+      ALTER TABLE alert_rules ADD COLUMN IF NOT EXISTS description TEXT;
+      ALTER TABLE alert_rules ADD COLUMN IF NOT EXISTS condition_operator VARCHAR(10);
+      ALTER TABLE alert_rules ADD COLUMN IF NOT EXISTS threshold_value NUMERIC;
+      ALTER TABLE alert_rules ADD COLUMN IF NOT EXISTS priority INTEGER DEFAULT 1;
+      ALTER TABLE alert_rules ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;
+      ALTER TABLE alert_rules ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW();
+
+      -- Drop old columns if they exist
+      ALTER TABLE alert_rules DROP COLUMN IF EXISTS condition;
+      ALTER TABLE alert_rules DROP COLUMN IF EXISTS threshold;
+      ALTER TABLE alert_rules DROP COLUMN IF EXISTS duration_minutes;
+      ALTER TABLE alert_rules DROP COLUMN IF EXISTS notification_channels;
+
+      -- Update alerts table structure
+      ALTER TABLE alerts ADD COLUMN IF NOT EXISTS current_value NUMERIC;
+      ALTER TABLE alerts ADD COLUMN IF NOT EXISTS threshold_value NUMERIC;
+      ALTER TABLE alerts ADD COLUMN IF NOT EXISTS acknowledged_at TIMESTAMP;
+      ALTER TABLE alerts ADD COLUMN IF NOT EXISTS acknowledgement_comment TEXT;
+      ALTER TABLE alerts ADD COLUMN IF NOT EXISTS auto_resolved BOOLEAN DEFAULT false;
+      ALTER TABLE alerts ADD COLUMN IF NOT EXISTS resolution_comment TEXT;
+      ALTER TABLE alerts ALTER COLUMN acknowledged_by TYPE INTEGER USING acknowledged_by::integer;
+
+      -- Create alert_notifications table
+      CREATE TABLE IF NOT EXISTS alert_notifications (
+        id SERIAL PRIMARY KEY,
+        alert_id INTEGER REFERENCES alerts(id) ON DELETE CASCADE,
+        notification_type VARCHAR(20) NOT NULL,
+        recipient TEXT NOT NULL,
+        status VARCHAR(20) NOT NULL,
+        error_message TEXT,
+        sent_at TIMESTAMP DEFAULT NOW()
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_alert_notifications_alert ON alert_notifications(alert_id);
+      CREATE INDEX IF NOT EXISTS idx_alert_notifications_status ON alert_notifications(status);
+
+      -- Update users table for email notifications
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS email_notifications BOOLEAN DEFAULT true;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS notification_severity VARCHAR(20) DEFAULT 'all';
+    `
+  },
+
+  // Migration 9: Create migration tracking table
   {
     name: 'create_migrations_table',
     sql: `

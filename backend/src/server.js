@@ -19,6 +19,7 @@ const dashboardController = require('./controllers/dashboard.controller');
 const metricsController = require('./controllers/metrics.controller');
 const internetUsageController = require('./controllers/internet-usage.controller');
 const zabbixController = require('./controllers/zabbix.controller');
+const alertsController = require('./controllers/alerts.controller');
 
 // Initialize Express app
 const app = express();
@@ -129,14 +130,23 @@ app.get('/api/zabbix/links/host/:hostId/history', authenticateJWT, zabbixControl
 app.put('/api/zabbix/links/:id', authenticateJWT, requireRole('admin'), zabbixController.updateLink);
 app.get('/api/zabbix/problems', authenticateJWT, zabbixController.getActiveProblems);
 
-// Alerts routes (placeholder - will be implemented in Phase 6)
-app.get('/api/alerts', authenticateJWT, (req, res) => {
-  res.json({
-    success: true,
-    message: 'Alerts endpoint - to be implemented in Phase 6',
-    data: []
-  });
-});
+// Alerts routes
+app.get('/api/alerts', authenticateJWT, alertsController.getAlerts);
+app.get('/api/alerts/statistics', authenticateJWT, alertsController.getAlertStatistics);
+app.get('/api/alerts/:id', authenticateJWT, alertsController.getAlertById);
+app.post('/api/alerts/:id/acknowledge', authenticateJWT, alertsController.acknowledgeAlert);
+app.post('/api/alerts/:id/resolve', authenticateJWT, alertsController.resolveAlert);
+
+// Alert rules routes
+app.get('/api/alert-rules', authenticateJWT, alertsController.getAlertRules);
+app.get('/api/alert-rules/:id', authenticateJWT, alertsController.getAlertRuleById);
+app.post('/api/alert-rules', authenticateJWT, requireRole('admin'), alertsController.createAlertRule);
+app.put('/api/alert-rules/:id', authenticateJWT, requireRole('admin'), alertsController.updateAlertRule);
+app.delete('/api/alert-rules/:id', authenticateJWT, requireRole('admin'), alertsController.deleteAlertRule);
+app.post('/api/alert-rules/evaluate', authenticateJWT, requireRole('admin'), alertsController.triggerRuleEvaluation);
+
+// Email configuration test
+app.post('/api/alerts/test-email', authenticateJWT, requireRole('admin'), alertsController.testEmailConfiguration);
 
 // 404 handler
 app.use((req, res) => {
