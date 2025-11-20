@@ -228,7 +228,55 @@ const migrations = [
     `
   },
 
-  // Migration 9: Create migration tracking table
+  // Migration 9: Create security and audit tables for Phase 7
+  {
+    name: 'create_security_audit_tables_phase7',
+    sql: `
+      -- Audit Logs Table
+      CREATE TABLE IF NOT EXISTS audit_logs (
+        id BIGSERIAL PRIMARY KEY,
+        event_type VARCHAR(100) NOT NULL,
+        user_id INTEGER,
+        username VARCHAR(100),
+        ip_address INET,
+        user_agent TEXT,
+        resource VARCHAR(100),
+        resource_id VARCHAR(100),
+        action VARCHAR(50),
+        status VARCHAR(20),
+        severity VARCHAR(20),
+        details TEXT,
+        metadata JSONB DEFAULT '{}'::jsonb,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_event_type ON audit_logs(event_type);
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_severity ON audit_logs(severity);
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_ip_address ON audit_logs(ip_address);
+      CREATE INDEX IF NOT EXISTS idx_audit_logs_username ON audit_logs(username);
+
+      -- User Sessions Table
+      CREATE TABLE IF NOT EXISTS user_sessions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token_hash VARCHAR(255) NOT NULL,
+        ip_address INET,
+        user_agent TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        last_activity TIMESTAMPTZ DEFAULT NOW(),
+        expires_at TIMESTAMPTZ NOT NULL,
+        revoked_at TIMESTAMPTZ
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);
+      CREATE INDEX IF NOT EXISTS idx_user_sessions_token_hash ON user_sessions(token_hash);
+      CREATE INDEX IF NOT EXISTS idx_user_sessions_expires_at ON user_sessions(expires_at);
+    `
+  },
+
+  // Migration 10: Create migration tracking table
   {
     name: 'create_migrations_table',
     sql: `

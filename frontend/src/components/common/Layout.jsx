@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   Globe,
   Wifi,
+  Shield,
   Settings,
   LogOut,
   Menu,
@@ -31,6 +32,7 @@ function Layout() {
     { name: 'Alerts', path: '/alerts', icon: AlertTriangle },
     { name: 'Internet Usage', path: '/internet-usage', icon: Globe },
     { name: 'Internet Links', path: '/internet-links', icon: Wifi },
+    { name: 'Security', path: '/security', icon: Shield },
     { name: 'Settings', path: '/settings', icon: Settings },
   ]
 

@@ -1,5 +1,13 @@
 const { AuthService } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
+const auditLogger = require('../services/audit-logger');
+const {
+  recordFailedLogin,
+  resetFailedLogins,
+  createSession,
+  revokeSession,
+  detectSuspiciousActivity
+} = require('../middleware/security');
 
 const authService = new AuthService();
 
@@ -32,23 +40,44 @@ async function login(req, res) {
 
     const { username, password } = req.body;
 
+    // Detect suspicious activity
+    await detectSuspiciousActivity(req);
+
     // Attempt authentication
-    const result = await authService.login(username, password);
+    try {
+      const result = await authService.login(username, password);
 
-    res.json({
-      success: true,
-      message: 'Login successful',
-      ...result
-    });
+      // Reset failed login attempts on success
+      const ip = auditLogger.getIpAddress(req);
+      resetFailedLogins(ip);
 
-  } catch (error) {
-    console.error('Login error:', error);
+      // Log successful login
+      await auditLogger.logAuthSuccess(result.user, req);
 
-    if (error.message === 'Invalid credentials') {
+      // Create session
+      await createSession(result.user.id, result.token, req);
+
+      res.json({
+        success: true,
+        message: 'Login successful',
+        ...result
+      });
+
+    } catch (authError) {
+      // Record failed login attempt
+      const ip = auditLogger.getIpAddress(req);
+      recordFailedLogin(ip);
+
+      // Log failed login
+      await auditLogger.logAuthFailure(username, authError.message, req);
+
       return res.status(401).json({
         error: 'Invalid username or password'
       });
     }
+
+  } catch (error) {
+    console.error('Login error:', error);
 
     res.status(500).json({
       error: 'An error occurred during login'
@@ -92,11 +121,21 @@ async function getProfile(req, res) {
 // Logout handler (mainly for logging purposes)
 async function logout(req, res) {
   try {
+    // Log logout
+    await auditLogger.logLogout(req.user, req);
+
+    // Revoke session
+    const token = req.headers.authorization?.split(' ')[1];
+    if (token) {
+      await revokeSession(req.user.id, token);
+    }
+
     res.json({
       success: true,
       message: 'Logged out successfully'
     });
   } catch (error) {
+    console.error('Logout error:', error);
     res.status(500).json({
       error: 'Logout failed'
     });

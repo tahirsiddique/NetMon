@@ -20,6 +20,10 @@ const metricsController = require('./controllers/metrics.controller');
 const internetUsageController = require('./controllers/internet-usage.controller');
 const zabbixController = require('./controllers/zabbix.controller');
 const alertsController = require('./controllers/alerts.controller');
+const securityController = require('./controllers/security.controller');
+
+// Import security middleware
+const { requestLogger, checkLoginLockout } = require('./middleware/security');
 
 // Initialize Express app
 const app = express();
@@ -46,11 +50,8 @@ const limiter = rateLimit({
 
 app.use('/api/', limiter);
 
-// Request logging middleware
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
-});
+// Enhanced request logging middleware
+app.use(requestLogger);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
@@ -76,7 +77,7 @@ app.get('/health', async (req, res) => {
 // API Routes
 
 // Authentication routes
-app.post('/api/auth/login', authController.loginValidation, authController.login);
+app.post('/api/auth/login', checkLoginLockout, authController.loginValidation, authController.login);
 app.post('/api/auth/logout', authenticateJWT, authController.logout);
 app.get('/api/auth/verify', authenticateJWT, authController.verifyToken);
 app.get('/api/auth/profile', authenticateJWT, authController.getProfile);
@@ -147,6 +148,16 @@ app.post('/api/alert-rules/evaluate', authenticateJWT, requireRole('admin'), ale
 
 // Email configuration test
 app.post('/api/alerts/test-email', authenticateJWT, requireRole('admin'), alertsController.testEmailConfiguration);
+
+// Security and audit routes
+app.get('/api/security/audit-logs', authenticateJWT, requireRole('admin'), securityController.getAuditLogs);
+app.get('/api/security/audit-logs/statistics', authenticateJWT, requireRole('admin'), securityController.getAuditStatistics);
+app.get('/api/security/audit-logs/users/:userId/activity', authenticateJWT, requireRole('admin'), securityController.getUserActivity);
+app.get('/api/security/my/activity', authenticateJWT, securityController.getMyActivity);
+app.get('/api/security/my/sessions', authenticateJWT, securityController.getMySessions);
+app.post('/api/security/sessions/:sessionId/revoke', authenticateJWT, securityController.revokeSessionById);
+app.get('/api/security/dashboard', authenticateJWT, requireRole('admin'), securityController.getSecurityDashboard);
+app.get('/api/security/audit-logs/export', authenticateJWT, requireRole('admin'), securityController.exportAuditLogs);
 
 // 404 handler
 app.use((req, res) => {
