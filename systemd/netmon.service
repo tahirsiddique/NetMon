@@ -1,0 +1,36 @@
+[Unit]
+Description=Digiskills Network Monitoring System
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/netmon
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+
+# Start services
+ExecStart=/usr/local/bin/docker-compose up -d
+
+# Stop services
+ExecStop=/usr/local/bin/docker-compose down
+
+# Reload configuration
+ExecReload=/usr/local/bin/docker-compose restart
+
+# Restart policy
+Restart=on-failure
+RestartSec=10s
+
+# Security
+User=root
+Group=docker
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=netmon
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database with TimescaleDB (Development)
+  postgres:
+    image: timescale/timescaledb:latest-pg14
+    container_name: netmon-dev-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-digiskills_monitor}
+      POSTGRES_USER: ${DB_USER:-monitor_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-SecurePassword123!}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-monitor_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - netmon-dev-network
+
+  # Redis for Development
+  redis:
+    image: redis:7-alpine
+    container_name: netmon-dev-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_dev_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - netmon-dev-network
+
+  # MailHog for Email Testing (Development Only)
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: netmon-dev-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP server
+      - "8025:8025"  # Web UI
+    networks:
+      - netmon-dev-network
+
+  # Optional: Adminer for database management
+  adminer:
+    image: adminer:latest
+    container_name: netmon-dev-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    networks:
+      - netmon-dev-network
+    depends_on:
+      - postgres
+
+  # Optional: Redis Commander for Redis management
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: netmon-dev-redis-commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8081:8081"
+    networks:
+      - netmon-dev-network
+    depends_on:
+      - redis
+
+networks:
+  netmon-dev-network:
+    driver: bridge
+    name: netmon-dev-network
+
+volumes:
+  postgres_dev_data:
+    driver: local
+    name: netmon-dev-postgres-data
+  redis_dev_data:
+    driver: local
+    name: netmon-dev-redis-data
