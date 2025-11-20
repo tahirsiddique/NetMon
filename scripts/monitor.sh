@@ -51,6 +51,9 @@ check_containers() {
     echo ""
     echo "=== Docker Container Health ==="
 
+    # Define critical services that require immediate alerts
+    CRITICAL_SERVICES=("netmon-postgres" "netmon-backend-1" "netmon-nginx")
+
     CONTAINERS=(
         "netmon-postgres"
         "netmon-redis"
@@ -68,11 +71,21 @@ check_containers() {
                 check_service "$CONTAINER" "echo 'running'"
             else
                 check_service "$CONTAINER" "exit 1"
+
+                # Send critical alert for important services
+                if [[ " ${CRITICAL_SERVICES[*]} " =~ " ${CONTAINER} " ]]; then
+                    send_critical_alert "$CONTAINER" "Container is running but health check failed. Status: $HEALTH"
+                fi
             fi
         else
             echo -e "${RED}✗${NC} $CONTAINER is not running"
             log "ERROR: $CONTAINER is not running"
             ALL_HEALTHY=false
+
+            # Send critical alert for important services
+            if [[ " ${CRITICAL_SERVICES[*]} " =~ " ${CONTAINER} " ]]; then
+                send_critical_alert "$CONTAINER" "Container is not running. Service is completely down."
+            fi
         fi
     done
 }
@@ -158,16 +171,42 @@ check_volumes() {
     docker system df -v | grep "Local Volumes" -A 20 | grep netmon
 }
 
-# Send alert email (if service is down)
-send_alert() {
-    SUBJECT="[ALERT] Digiskills Monitor - Service Health Issue"
-    BODY="Service health check failed at $(date)\n\nPlease check the logs for details."
+# Send critical alert via API (Email + WhatsApp)
+send_critical_alert() {
+    SERVICE_NAME=$1
+    ERROR_MESSAGE=$2
 
-    # Only send if mail command is available
-    if command -v mail &> /dev/null; then
-        echo -e "$BODY" | mail -s "$SUBJECT" "$ALERT_EMAIL"
-        log "INFO: Alert email sent to $ALERT_EMAIL"
+    log "CRITICAL: Sending alert for $SERVICE_NAME"
+
+    # Try to send via API (Email + WhatsApp)
+    RESPONSE=$(curl -s -X POST http://localhost:3000/api/notifications/send \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $MONITORING_API_TOKEN" \
+        -d "{
+            \"title\": \"🚨 CRITICAL: $SERVICE_NAME Failure\",
+            \"message\": \"$ERROR_MESSAGE\",
+            \"severity\": \"critical\",
+            \"channels\": [\"email\", \"whatsapp\"]
+        }" 2>/dev/null)
+
+    if [ $? -eq 0 ]; then
+        log "INFO: Critical alert sent successfully"
+    else
+        log "WARNING: Failed to send alert via API, trying mail command"
+
+        # Fallback to mail command
+        if command -v mail &> /dev/null; then
+            SUBJECT="🚨 CRITICAL: Digiskills Monitor - $SERVICE_NAME Failure"
+            BODY="Service: $SERVICE_NAME\nStatus: FAILED\nError: $ERROR_MESSAGE\nTime: $(date)\n\nImmediate action required!"
+            echo -e "$BODY" | mail -s "$SUBJECT" "$ALERT_EMAIL"
+            log "INFO: Fallback alert email sent to $ALERT_EMAIL"
+        fi
     fi
+}
+
+# Send alert email (if service is down) - Legacy function
+send_alert() {
+    send_critical_alert "Health Check" "Multiple services are unhealthy. Please check the logs for details."
 }
 
 # Generate report

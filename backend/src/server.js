@@ -21,6 +21,7 @@ const internetUsageController = require('./controllers/internet-usage.controller
 const zabbixController = require('./controllers/zabbix.controller');
 const alertsController = require('./controllers/alerts.controller');
 const securityController = require('./controllers/security.controller');
+const notificationsController = require('./controllers/notifications.controller');
 
 // Import security middleware
 const { requestLogger, checkLoginLockout } = require('./middleware/security');
@@ -204,6 +205,14 @@ app.get('/api/security/my/sessions', authenticateJWT, securityController.getMySe
 app.post('/api/security/sessions/:sessionId/revoke', authenticateJWT, securityController.revokeSessionById);
 app.get('/api/security/dashboard', authenticateJWT, requireRole('admin'), securityController.getSecurityDashboard);
 app.get('/api/security/audit-logs/export', authenticateJWT, requireRole('admin'), securityController.exportAuditLogs);
+
+// Notification routes (Email + WhatsApp)
+app.get('/api/notifications/status', authenticateJWT, requireRole('admin'), notificationsController.getStatus);
+app.post('/api/notifications/test', authenticateJWT, requireRole('admin'), notificationsController.testNotifications);
+app.post('/api/notifications/test/email', authenticateJWT, requireRole('admin'), notificationsController.testEmail);
+app.post('/api/notifications/test/whatsapp', authenticateJWT, requireRole('admin'), notificationsController.testWhatsApp);
+app.post('/api/notifications/test/critical', authenticateJWT, requireRole('admin'), notificationsController.testCriticalAlert);
+app.post('/api/notifications/send', authenticateJWT, requireRole('admin'), notificationsController.sendCustomNotification);
 
 // 404 handler
 app.use((req, res) => {
