@@ -17,6 +17,7 @@ const authController = require('./controllers/auth.controller');
 const nodesController = require('./controllers/nodes.controller');
 const dashboardController = require('./controllers/dashboard.controller');
 const metricsController = require('./controllers/metrics.controller');
+const internetUsageController = require('./controllers/internet-usage.controller');
 
 // Initialize Express app
 const app = express();
@@ -103,14 +104,17 @@ app.get('/api/metrics/node/:nodeId/:metricType/stats', authenticateJWT, metricsC
 app.get('/api/metrics/node/:nodeId/services', authenticateJWT, metricsController.getServiceStatus);
 app.get('/api/metrics/node/:nodeId/hardware', authenticateJWT, metricsController.getHardwareHealth);
 
-// Internet usage routes (placeholder - will be implemented in Phase 3)
-app.get('/api/internet-usage/top-users', authenticateJWT, (req, res) => {
-  res.json({
-    success: true,
-    message: 'Internet usage endpoint - to be implemented in Phase 3',
-    data: []
-  });
-});
+// Internet usage routes
+app.get('/api/internet-usage/top-users', authenticateJWT, internetUsageController.getTopUsers);
+app.get('/api/internet-usage/user/:username', authenticateJWT, internetUsageController.getUserUsage);
+app.get('/api/internet-usage/protocols', authenticateJWT, internetUsageController.getUsageByProtocol);
+app.get('/api/internet-usage/time-series', authenticateJWT, internetUsageController.getUsageTimeSeries);
+app.get('/api/internet-usage/destinations', authenticateJWT, internetUsageController.getTopDestinations);
+app.get('/api/internet-usage/stats', authenticateJWT, internetUsageController.getOverallStats);
+app.get('/api/internet-usage/search', authenticateJWT, internetUsageController.searchUsers);
+app.get('/api/internet-usage/export', authenticateJWT, internetUsageController.exportCSV);
+app.get('/api/internet-usage/resolver/stats', authenticateJWT, internetUsageController.getResolverStats);
+app.post('/api/internet-usage/resolver/clear', authenticateJWT, requireRole('admin'), internetUsageController.clearResolverCache);
 
 // Alerts routes (placeholder - will be implemented in Phase 6)
 app.get('/api/alerts', authenticateJWT, (req, res) => {
