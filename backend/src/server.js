@@ -16,6 +16,7 @@ const { authenticateJWT, requireRole } = require('./middleware/auth');
 const authController = require('./controllers/auth.controller');
 const nodesController = require('./controllers/nodes.controller');
 const dashboardController = require('./controllers/dashboard.controller');
+const metricsController = require('./controllers/metrics.controller');
 
 // Initialize Express app
 const app = express();
@@ -93,15 +94,14 @@ app.post('/api/nodes', authenticateJWT, requireRole('admin'), nodesController.cr
 app.put('/api/nodes/:id', authenticateJWT, requireRole('admin'), nodesController.updateNode);
 app.delete('/api/nodes/:id', authenticateJWT, requireRole('admin'), nodesController.deleteNode);
 
-// Metrics routes (placeholder - will be implemented in Phase 2)
-app.post('/api/metrics/time-series', authenticateJWT, (req, res) => {
-  res.json({
-    success: true,
-    message: 'Metrics endpoint - to be implemented in Phase 2',
-    timestamps: [],
-    series: []
-  });
-});
+// Metrics routes
+app.post('/api/metrics/time-series', authenticateJWT, metricsController.getTimeSeriesData);
+app.get('/api/metrics/node/:nodeId', authenticateJWT, metricsController.getNodeMetrics);
+app.get('/api/metrics/node/:nodeId/available', authenticateJWT, metricsController.getAvailableMetrics);
+app.get('/api/metrics/node/:nodeId/:metricType/latest', authenticateJWT, metricsController.getLatestMetric);
+app.get('/api/metrics/node/:nodeId/:metricType/stats', authenticateJWT, metricsController.getMetricStats);
+app.get('/api/metrics/node/:nodeId/services', authenticateJWT, metricsController.getServiceStatus);
+app.get('/api/metrics/node/:nodeId/hardware', authenticateJWT, metricsController.getHardwareHealth);
 
 // Internet usage routes (placeholder - will be implemented in Phase 3)
 app.get('/api/internet-usage/top-users', authenticateJWT, (req, res) => {
