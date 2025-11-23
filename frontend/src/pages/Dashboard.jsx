@@ -76,39 +76,50 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
+      {/* Stats Cards with staggered animations */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Total Nodes"
-          value={stats.total_nodes || 0}
-          icon={Server}
-          color="blue"
-        />
-        <StatCard
-          title="Nodes Up"
-          value={stats.up_count || 0}
-          icon={CheckCircle}
-          color="green"
-        />
-        <StatCard
-          title="Nodes Down"
-          value={stats.down_count || 0}
-          icon={XCircle}
-          color="red"
-        />
-        <StatCard
-          title="Active Alerts"
-          value={overview?.active_alerts?.length || 0}
-          icon={AlertTriangle}
-          color="amber"
-        />
+        <div className="animate-slideInUp">
+          <StatCard
+            title="Total Nodes"
+            value={stats.total_nodes || 0}
+            icon={Server}
+            color="blue"
+          />
+        </div>
+        <div className="animate-slideInUp animation-delay-100">
+          <StatCard
+            title="Nodes Up"
+            value={stats.up_count || 0}
+            icon={CheckCircle}
+            color="green"
+          />
+        </div>
+        <div className="animate-slideInUp animation-delay-200">
+          <StatCard
+            title="Nodes Down"
+            value={stats.down_count || 0}
+            icon={XCircle}
+            color="red"
+          />
+        </div>
+        <div className="animate-slideInUp animation-delay-300">
+          <StatCard
+            title="Active Alerts"
+            value={overview?.active_alerts?.length || 0}
+            icon={AlertTriangle}
+            color="amber"
+          />
+        </div>
       </div>
 
       {/* Visualization Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Node Status Distribution */}
-        <div className="card">
-          <h2 className="text-lg font-semibold mb-4">Node Status Distribution</h2>
+        <div className="card animate-slideInLeft">
+          <h2 className="text-lg font-semibold mb-4 flex items-center">
+            <div className="w-2 h-6 bg-gradient-to-b from-blue-500 to-indigo-600 rounded-full mr-3"></div>
+            Node Status Distribution
+          </h2>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
@@ -139,8 +150,11 @@ function Dashboard() {
         </div>
 
         {/* Node Types */}
-        <div className="card">
-          <h2 className="text-lg font-semibold mb-4">Infrastructure by Type</h2>
+        <div className="card animate-slideInRight">
+          <h2 className="text-lg font-semibold mb-4 flex items-center">
+            <div className="w-2 h-6 bg-gradient-to-b from-purple-500 to-pink-600 rounded-full mr-3"></div>
+            Infrastructure by Type
+          </h2>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart
               data={overview?.nodes_by_type || []}
@@ -163,8 +177,11 @@ function Dashboard() {
       </div>
 
       {/* Critical Infrastructure Status */}
-      <div className="card">
-        <h2 className="text-lg font-semibold mb-4">Critical Infrastructure Status</h2>
+      <div className="card animate-fadeIn">
+        <h2 className="text-lg font-semibold mb-4 flex items-center">
+          <div className="w-2 h-6 bg-gradient-to-b from-green-500 to-emerald-600 rounded-full mr-3"></div>
+          Critical Infrastructure Status
+        </h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {overview?.critical_nodes?.slice(0, 12).map((node) => (
             <NodeStatusCard key={node.id} node={node} />
@@ -174,9 +191,11 @@ function Dashboard() {
 
       {/* Internet Links Status */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
+        <div className="card animate-slideInLeft">
           <h2 className="text-lg font-semibold mb-4 flex items-center">
-            <Activity className="w-5 h-5 mr-2" />
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center mr-3">
+              <Activity className="w-5 h-5 text-white" />
+            </div>
             Internet Links (Zabbix)
           </h2>
           <div className="space-y-3">
@@ -206,9 +225,11 @@ function Dashboard() {
         </div>
 
         {/* Recent Alerts */}
-        <div className="card">
+        <div className="card animate-slideInRight">
           <h2 className="text-lg font-semibold mb-4 flex items-center">
-            <AlertTriangle className="w-5 h-5 mr-2" />
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mr-3 animate-pulse-slow">
+              <AlertTriangle className="w-5 h-5 text-white" />
+            </div>
             Recent Alerts
           </h2>
           <div className="space-y-3">
@@ -259,23 +280,28 @@ function Dashboard() {
 
 function StatCard({ title, value, icon: Icon, color }) {
   const colorClasses = {
-    blue: 'bg-blue-50 text-blue-600',
-    green: 'bg-green-50 text-green-600',
-    red: 'bg-red-50 text-red-600',
-    amber: 'bg-amber-50 text-amber-600',
+    blue: 'stat-card-blue',
+    green: 'stat-card-green',
+    red: 'stat-card-red',
+    amber: 'stat-card-amber',
+    purple: 'stat-card-purple',
+    cyan: 'stat-card-cyan',
   }
 
   return (
-    <div className="card">
-      <div className="flex items-center justify-between">
+    <div className={`${colorClasses[color]} relative overflow-hidden`}>
+      <div className="flex items-center justify-between relative z-10">
         <div>
-          <p className="text-sm text-gray-600 mb-1">{title}</p>
-          <p className="text-3xl font-bold">{value}</p>
+          <p className="text-sm text-white/80 mb-2 font-medium">{title}</p>
+          <p className="text-4xl font-bold animate-scaleIn">{value}</p>
         </div>
-        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClasses[color]}`}>
-          <Icon className="w-6 h-6" />
+        <div className="w-16 h-16 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm animate-bounce">
+          <Icon className="w-8 h-8" />
         </div>
       </div>
+      {/* Decorative gradient overlay */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+      <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12"></div>
     </div>
   )
 }
@@ -299,26 +325,26 @@ function NodeStatusCard({ node }) {
   }
 
   return (
-    <div className="flex flex-col items-center p-3 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+    <div className="flex flex-col items-center p-4 bg-gradient-to-br from-white to-gray-50 border-2 border-gray-200 rounded-xl hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300 animate-scaleIn">
       <div
-        className={`w-12 h-12 rounded-full ${getStatusColor(
+        className={`w-14 h-14 rounded-full ${getStatusColor(
           node.status
-        )} flex items-center justify-center mb-2 ${
-          node.status === 'up' ? 'animate-pulse-slow' : ''
+        )} flex items-center justify-center mb-3 shadow-lg ${
+          node.status === 'up' ? 'neon-green animate-pulse-slow' : node.status === 'down' ? 'neon-red' : ''
         }`}
       >
         {getIcon(node.type)}
       </div>
-      <p className="text-xs font-medium text-center truncate w-full" title={node.name}>
+      <p className="text-xs font-semibold text-center truncate w-full text-gray-800" title={node.name}>
         {node.name}
       </p>
       <span
-        className={`text-xs capitalize mt-1 ${
+        className={`text-xs capitalize mt-2 px-3 py-1 rounded-full font-bold ${
           node.status === 'up'
-            ? 'text-green-600'
+            ? 'bg-green-100 text-green-700'
             : node.status === 'down'
-            ? 'text-red-600'
-            : 'text-gray-600'
+            ? 'bg-red-100 text-red-700'
+            : 'bg-gray-100 text-gray-700'
         }`}
       >
         {node.status}
